@@ -1,16 +1,34 @@
-# React + Vite
+# تطبيق سُكَّري 🩸 (Sokari)
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+**سُكَّري** هو رفيقك الصحي اليومي، صُمم بحب وعناية ليجعل متابعة مرض السكري أسهل، أوضح، وأكثر أماناً. بدلاً من تسجيل قراءاتك في دفاتر ورقية قد تضيع، يتيح لك هذا التطبيق حفظ قراءاتك وتحليلها بذكاء، لتبقى دائماً مطمئناً على صحتك.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🌟 كيف سيساعدك تطبيق سُكَّري؟
 
-## React Compiler
+### 1. المتابعة اليومية السهلة
+يمكنك في ثوانٍ معدودة إدخال قراءة السكر الخاصة بك (سواء كنت صائماً أو بعد الأكل)، مع إمكانية كتابة ملاحظة بسيطة (مثلاً: "تناولت قطعة حلوى" أو "أشعر بدوار"). سيرسم لك التطبيق مباشرةً رسماً بيانياً يوضح مدى استقرار حالتك.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 2. طبيبك الذكي الخاص 🤖
+لست وحدك! التطبيق مزود بـ **طبيب ذكي** يقرأ ملاحظاتك ويرد عليها فوراً.
+- إذا كانت قراءتك ممتازة، سيشجعك.
+- إذا كان السكر مرتفعاً، سينصحك بما يجب فعله.
+- وإذا كان هناك هبوط خطير، سيوجهك فوراً للإسعافات المنزلية الضرورية (كشرب عصير) لإنقاذ الموقف.
 
-## Expanding the Oxlint configuration
+### 3. التقرير الأسبوعي التلقائي 📅
+في كل أسبوع، سيقوم التطبيق بصمت (ودون أي جهد منك) بدراسة كل قراءاتك خلال الأيام السبعة الماضية، وسيصدر لك **تقريراً أسبوعياً مفصلاً** يوضح لك نقاط الضعف والقوة، ويقدم لك نصيحة للأسبوع القادم بناءً على عمرك وأدويتك الحالية. ويمكنك العودة لهذه التقارير في أي وقت عبر "أرشيف التقارير".
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+### 4. الملخص الطبي والتراكمي التقريبي 📊
+يقوم التطبيق نيابةً عنك بحساب:
+- **متوسط السكر** العام.
+- **التراكمي التقريبي (eA1C)** لمعرفة نتيجة التراكمي المتوقعة قبل الذهاب للمختبر.
+- **نسبة الانضباط (TIR)**، لتعرف كم بالمئة من وقتك كان مستوى السكر لديك مثالياً!
+
+### 5. جاهز لزيارة طبيبك المعالج 🖨️
+عندما يحين موعد زيارتك لطبيبك الحقيقي، لن تحتاج لحمل أي دفاتر. بضغطة زر واحدة في قسم **"السجل"**، سيقوم التطبيق بتجهيز ملف مرتب وأنيق يحتوي على كل قراءاتك وملخص حالتك، لتتمكن من طباعته أو إرساله لطبيبك فوراً.
+
+### 6. تطبيقك على شاشة هاتفك 📱
+لا تحتاج للدخول إلى المتصفح في كل مرة. يمكنك بضغطة زر "إضافة إلى الشاشة الرئيسية" تثبيت التطبيق على هاتفك (سواء كان آيفون أو أندرويد)، ليظهر كأي تطبيق آخر بأيقونة زرقاء أنيقة، ليكون بمتناول يدك في أي لحظة.
+
+---
+**مع سُكَّري.. صحتك في أيدٍ أمينة، ومتابعتك أصبحت أذكى!** 💙
