@@ -21,7 +21,7 @@ export default function ProfilePage() {
   
   const [isLoading, setIsLoading] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
-  const [isEditing, setIsEditing] = useState(true);
+  const [isEditing, setIsEditing] = useState(false); // تعديل: دائماً يبدأ بوضع العرض
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -38,9 +38,6 @@ export default function ProfilePage() {
         if (savedOtherMeds.length > 0) {
           setOtherMed(savedOtherMeds.join('، '));
         }
-        
-        // إذا كان هناك بيانات محفوظة، نعرض وضع القراءة فقط
-        setIsEditing(false);
       }
     };
     loadProfile();
