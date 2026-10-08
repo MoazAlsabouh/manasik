@@ -92,15 +92,30 @@ export default function Dashboard() {
     
     // إرسال لجيميناي إذا كان هناك ملاحظة
     if (note.trim() !== '') {
-       const response = await analyzeReading(readingValue, isFasting, note, profile);
-       setAiResponse(response);
-       
-       if(savedDoc.success) {
-           await updateReading(savedDoc.id, { aiResponse: response });
+       if (!navigator.onLine) {
+           // وضع الأوفلاين
+           setAiResponse('تم حفظ قراءتك وملاحظتك بنجاح في الهاتف! 📶\nبما أنك غير متصل بالإنترنت حالياً، يمكنك لاحقاً الذهاب إلى قسم (طبيبي) والضغط على زر "إعادة المحاولة" لجلب رد الطبيب الذكي بمجرد عودة الإنترنت.');
+           if(savedDoc.success) {
+               await updateReading(savedDoc.id, { aiResponse: 'عذراً، انقطع الاتصال بالإنترنت وقت إدخال هذه الملاحظة. يرجى الضغط على زر (إعادة المحاولة) لجلب الرد.' });
+           }
+       } else {
+           // وضع الأونلاين
+           try {
+             const response = await analyzeReading(readingValue, isFasting, note, profile);
+             setAiResponse(response);
+             if(savedDoc.success) {
+                 await updateReading(savedDoc.id, { aiResponse: response });
+             }
+           } catch (error) {
+             setAiResponse('عذراً، حدثت مشكلة في الاتصال بالطبيب الذكي. لكن تم حفظ قراءتك بنجاح.');
+             if(savedDoc.success) {
+                 await updateReading(savedDoc.id, { aiResponse: 'عذراً، حدثت مشكلة في الاتصال بالشبكة. يرجى إعادة المحاولة.' });
+             }
+           }
        }
     }
 
-    // إعادة تعيين الحقول
+    // إعادة تعيين الحقول دائماً حتى لو كان أوفلاين
     setValue('');
     setNote('');
     fetchData();

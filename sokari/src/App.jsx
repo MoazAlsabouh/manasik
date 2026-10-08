@@ -40,7 +40,42 @@ function App() {
       setUser(currentUser);
       setLoading(false);
     });
-    return () => unsubscribe();
+
+    // المزامنة التلقائية للملاحظات عند عودة الإنترنت
+    const handleOnline = async () => {
+      try {
+        // نستورد الدوال هنا لتجنب زحمة الاستيرادات في الأعلى إن لزم الأمر أو نعرضها مباشرة
+        const { getReadings, updateReading, getProfile } = await import('./services/dbService.js');
+        const { analyzeReading } = await import('./services/geminiService.js');
+        
+        const allReadings = await getReadings(50);
+        // البحث عن أي قراءة تحمل رسالة الخطأ أو الأوفلاين
+        const pendingReadings = allReadings.filter(r => r.aiResponse && r.aiResponse.includes('عذراً'));
+        
+        if (pendingReadings.length > 0) {
+          const profile = await getProfile();
+          for (const item of pendingReadings) {
+            try {
+              const newResponse = await analyzeReading(item.value, item.isFasting, item.note, profile);
+              if (newResponse && !newResponse.includes('عذراً')) {
+                await updateReading(item.id, { aiResponse: newResponse });
+              }
+            } catch (e) {
+              console.error('Auto sync failed for item:', item.id);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Auto sync error:', err);
+      }
+    };
+
+    window.addEventListener('online', handleOnline);
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener('online', handleOnline);
+    };
   }, []);
 
   if (loading) {
