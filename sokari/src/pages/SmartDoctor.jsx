@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { generateWeeklyReport, analyzeReading } from '../services/geminiService';
-import { getReadings, getProfile, updateReading } from '../services/dbService';
-import { Loader2, Sparkles, HeartPulse, ChevronRight, MessageCircle, RefreshCw } from 'lucide-react';
+import { getReadings, getProfile, updateReading, saveWeeklyReport, getWeeklyReports } from '../services/dbService';
+import { Loader2, Sparkles, HeartPulse, ChevronRight, MessageCircle, RefreshCw, History, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
@@ -10,6 +10,9 @@ export default function SmartDoctor() {
   
   const [report, setReport] = useState('');
   const [isLoadingReport, setIsLoadingReport] = useState(false);
+  
+  const [pastReports, setPastReports] = useState([]);
+  const [isLoadingPastReports, setIsLoadingPastReports] = useState(false);
   
   const [notesResponses, setNotesResponses] = useState([]);
   const [isLoadingNotes, setIsLoadingNotes] = useState(false);
@@ -20,8 +23,17 @@ export default function SmartDoctor() {
   useEffect(() => {
     if (activeTab === 'notes') {
       loadNotesResponses();
+    } else if (activeTab === 'weekly') {
+      loadPastReports();
     }
   }, [activeTab]);
+
+  const loadPastReports = async () => {
+    setIsLoadingPastReports(true);
+    const data = await getWeeklyReports();
+    setPastReports(data);
+    setIsLoadingPastReports(false);
+  };
 
   const loadNotesResponses = async () => {
     setIsLoadingNotes(true);
@@ -44,6 +56,13 @@ export default function SmartDoctor() {
     
     const aiReport = await generateWeeklyReport(weeklyReadings, profile);
     setReport(aiReport);
+    
+    // حفظ التقرير في قاعدة البيانات إذا لم يكن رسالة خطأ
+    if (aiReport && !aiReport.includes("واجهت مشكلة") && !aiReport.includes("عذراً")) {
+      await saveWeeklyReport(aiReport);
+      loadPastReports(); // تحديث القائمة لإظهار التقرير الجديد
+    }
+    
     setIsLoadingReport(false);
   };
 
@@ -106,11 +125,13 @@ export default function SmartDoctor() {
             </button>
           </section>
 
+          {/* أحدث تقرير تم توليده للتو */}
           {report && (
-            <section className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <section className="bg-white p-6 rounded-[2rem] shadow-sm border border-blue-200 animate-in fade-in slide-in-from-bottom-4 duration-500 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-1.5 h-full bg-blue-500"></div>
               <h2 className="font-bold text-lg mb-4 text-blue-700 flex items-center gap-2">
                 <Sparkles size={20} />
-                تقريرك الأسبوعي جاهز:
+                تقريرك الأسبوعي الجديد:
               </h2>
               <div className="prose prose-blue prose-sm max-w-none text-slate-700 leading-loose whitespace-pre-wrap">
                 {report}
@@ -118,8 +139,44 @@ export default function SmartDoctor() {
             </section>
           )}
 
-          {!report && !isLoadingReport && (
-            <section className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100">
+          {/* أرشيف التقارير السابقة */}
+          <section className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100">
+            <h2 className="font-bold text-lg mb-6 text-slate-800 flex items-center gap-2">
+              <History size={20} className="text-slate-500" />
+              أرشيف التقارير السابقة
+            </h2>
+            
+            {isLoadingPastReports ? (
+              <div className="text-center text-slate-400 py-8">
+                <Loader2 size={24} className="animate-spin mx-auto mb-2 opacity-50" />
+                جاري تحميل الأرشيف...
+              </div>
+            ) : pastReports.length === 0 ? (
+              <div className="text-center text-slate-400 py-8 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-sm">
+                لم تقم بتوليد أي تقارير أسبوعية بعد.
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {pastReports.map((pastReport, index) => (
+                  <div key={pastReport.id} className="bg-slate-50 p-5 rounded-2xl border border-slate-200">
+                    <div className="flex items-center gap-2 mb-3 pb-3 border-b border-slate-200/60">
+                      <Calendar size={16} className="text-slate-500" />
+                      <span className="text-xs font-bold text-slate-600">
+                        {format(new Date(pastReport.createdAt), 'dd MMMM yyyy - hh:mm a', { locale: ar })}
+                        {index === 0 && report === '' && <span className="mr-2 bg-blue-100 text-blue-600 px-2 py-0.5 rounded text-[10px]">الأحدث</span>}
+                      </span>
+                    </div>
+                    <div className="prose prose-sm max-w-none text-slate-700 leading-relaxed whitespace-pre-wrap">
+                      {pastReport.report}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {!report && pastReports.length === 0 && !isLoadingReport && !isLoadingPastReports && (
+            <section className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 mt-6">
               <h2 className="font-bold text-lg mb-4">كيف يعمل التقرير الأسبوعي؟</h2>
               <ul className="space-y-4 text-sm text-slate-600">
                 <li className="flex gap-3">
@@ -155,7 +212,7 @@ export default function SmartDoctor() {
           ) : (
             notesResponses.map((item) => {
               // التحقق مما إذا كان الرد يحمل عبارة الخطأ الشهيرة
-              const isError = item.aiResponse?.includes("لم أتمكن من تحليل قراءتك");
+              const isError = item.aiResponse?.includes("لم أتمكن من تحليل قراءتك") || item.aiResponse?.includes("عذراً");
               const isRetrying = retryingId === item.id;
 
               return (

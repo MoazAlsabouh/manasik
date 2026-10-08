@@ -4,6 +4,40 @@ import { collection, addDoc, getDocs, query, orderBy, limit, doc, setDoc, getDoc
 // نحن نستخدم Collection واحدة كما طلبت لأن المشروع شخصي ولا يحتاج تسجيل دخول متعدد
 const READINGS_COLLECTION = 'sugar_readings';
 const PROFILE_DOC = 'user_profile';
+const WEEKLY_REPORTS_COLLECTION = 'weekly_reports';
+
+export const saveWeeklyReport = async (reportText) => {
+  try {
+    const docRef = await addDoc(collection(db, WEEKLY_REPORTS_COLLECTION), {
+      report: reportText,
+      timestamp: serverTimestamp(),
+      createdAt: new Date().toISOString()
+    });
+    return { success: true, id: docRef.id };
+  } catch (error) {
+    console.error("Error saving weekly report: ", error);
+    return { success: false, error };
+  }
+};
+
+export const getWeeklyReports = async (limitCount = 20) => {
+  try {
+    const q = query(
+      collection(db, WEEKLY_REPORTS_COLLECTION), 
+      orderBy('createdAt', 'desc'), 
+      limit(limitCount)
+    );
+    const querySnapshot = await getDocs(q);
+    const reports = [];
+    querySnapshot.forEach((doc) => {
+      reports.push({ id: doc.id, ...doc.data() });
+    });
+    return reports;
+  } catch (error) {
+    console.error("Error getting weekly reports: ", error);
+    return [];
+  }
+};
 
 export const saveReading = async (readingValue, isFasting, note = '') => {
   try {
