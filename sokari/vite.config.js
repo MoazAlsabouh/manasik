@@ -7,4 +7,8 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  define: {
+    // هذه الحيلة تسحب المفتاح بدون كلمة VITE وتمرره للتطبيق
+    'import.meta.env.VITE_AI_KEY': JSON.stringify(process.env.GEMINI_API_KEY)
+  }
 })
