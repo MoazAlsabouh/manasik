@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { generateWeeklyReport, analyzeReading } from '../services/geminiService';
 import { getReadings, getProfile, updateReading, saveWeeklyReport, getWeeklyReports } from '../services/dbService';
-import { Loader2, Sparkles, HeartPulse, ChevronRight, MessageCircle, RefreshCw, History, Calendar, ChevronDown } from 'lucide-react';
+import { Loader2, Sparkles, HeartPulse, ChevronRight, MessageCircle, RefreshCw, History, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
@@ -14,6 +14,13 @@ export default function SmartDoctor() {
   const [pastReports, setPastReports] = useState([]);
   const [isLoadingPastReports, setIsLoadingPastReports] = useState(false);
   const [visibleReportsCount, setVisibleReportsCount] = useState(5);
+  const [expandedReports, setExpandedReports] = useState([]);
+
+  const toggleReport = (id) => {
+    setExpandedReports(prev => 
+      prev.includes(id) ? prev.filter(rId => rId !== id) : [...prev, id]
+    );
+  };
   
   const [notesResponses, setNotesResponses] = useState([]);
   const [isLoadingNotes, setIsLoadingNotes] = useState(false);
@@ -161,21 +168,45 @@ export default function SmartDoctor() {
                 لم تقم بتوليد أي تقارير أسبوعية بعد.
               </div>
             ) : (
-              <div className="space-y-6">
-                {visiblePastReports.map((pastReport, index) => (
-                  <div key={pastReport.id} className="bg-slate-50 p-5 rounded-2xl border border-slate-200">
-                    <div className="flex items-center gap-2 mb-3 pb-3 border-b border-slate-200/60">
-                      <Calendar size={16} className="text-slate-500" />
-                      <span className="text-xs font-bold text-slate-600">
-                        {format(new Date(pastReport.createdAt), 'dd MMMM yyyy - hh:mm a', { locale: ar })}
-                        {index === 0 && report === '' && <span className="mr-2 bg-blue-100 text-blue-600 px-2 py-0.5 rounded text-[10px]">الأحدث</span>}
-                      </span>
+              <div className="space-y-4">
+                {visiblePastReports.map((pastReport, index) => {
+                  const isExpanded = expandedReports.includes(pastReport.id);
+                  return (
+                    <div key={pastReport.id} className="bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden transition-all">
+                      <button 
+                        onClick={() => toggleReport(pastReport.id)}
+                        className="w-full flex items-center justify-between p-4 sm:p-5 text-right hover:bg-slate-100 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="bg-blue-100 p-2 rounded-xl text-blue-600 shrink-0">
+                            <History size={18} />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-bold text-slate-700 text-sm">التقرير الأسبوعي</h3>
+                              {index === 0 && report === '' && <span className="bg-blue-100 text-blue-600 px-2 py-0.5 rounded text-[10px] font-bold">الأحدث</span>}
+                            </div>
+                            <div className="flex items-center gap-1.5 mt-1 text-slate-500 text-xs">
+                              <Calendar size={12} />
+                              <span dir="ltr">{format(new Date(pastReport.createdAt), 'dd MMMM yyyy - hh:mm a', { locale: ar })}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-slate-400 shrink-0">
+                          {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                        </div>
+                      </button>
+                      
+                      {isExpanded && (
+                        <div className="p-5 pt-0 border-t border-slate-200/60 bg-white">
+                          <div className="prose prose-sm max-w-none text-slate-700 leading-relaxed whitespace-pre-wrap mt-4">
+                            {pastReport.report}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <div className="prose prose-sm max-w-none text-slate-700 leading-relaxed whitespace-pre-wrap">
-                      {pastReport.report}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
                 
                 {visibleReportsCount < pastReports.length && (
                   <button 
