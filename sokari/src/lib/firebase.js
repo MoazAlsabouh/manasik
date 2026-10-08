@@ -1,5 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -11,6 +12,7 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 
 // تفعيل ميزة التخزين المؤقت (العمل بدون إنترنت) لدعم الاتصال الضعيف
 const db = initializeFirestore(app, {
@@ -19,4 +21,4 @@ const db = initializeFirestore(app, {
   })
 });
 
-export { db };
+export { db, auth };

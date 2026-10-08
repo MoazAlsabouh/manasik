@@ -1,9 +1,13 @@
+import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { Home, LineChart, Stethoscope, User } from 'lucide-react';
+import { Home, LineChart, Stethoscope, User, Loader2 } from 'lucide-react';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from './lib/firebase';
 import Dashboard from './pages/Dashboard';
 import HistoryPage from './pages/HistoryPage';
 import SmartDoctor from './pages/SmartDoctor';
 import ProfilePage from './pages/ProfilePage';
+import LoginPage from './pages/LoginPage';
 
 function NavLink({ to, icon: Icon, label }) {
   const location = useLocation();
@@ -28,6 +32,35 @@ function Navigation() {
 }
 
 function App() {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-slate-50 text-blue-600 font-['Cairo']">
+        <Loader2 size={40} className="animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <BrowserRouter>
+        <Routes>
+          <Route path="*" element={<LoginPage />} />
+        </Routes>
+      </BrowserRouter>
+    );
+  }
+
   return (
     <BrowserRouter>
       <div className="min-h-screen pb-20 md:pb-0 md:pr-24 bg-slate-50 text-slate-800">
