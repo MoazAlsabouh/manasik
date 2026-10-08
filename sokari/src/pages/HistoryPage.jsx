@@ -33,6 +33,34 @@ export default function HistoryPage() {
     `).join('');
 
     // تصميم التقرير بالكامل (HTML + CSS)
+    
+    // حسابات الملخص الطبي
+    let summaryHtml = '';
+    if (readings.length > 0) {
+      const sum = readings.reduce((acc, curr) => acc + curr.value, 0);
+      const avg = Math.round(sum / readings.length);
+      const a1c = ((avg + 46.7) / 28.7).toFixed(1);
+      const inRange = readings.filter(r => r.value >= 70 && r.value <= 180).length;
+      const tir = Math.round((inRange / readings.length) * 100);
+
+      summaryHtml = `
+        <div class="summary-box">
+          <div class="summary-item">
+            <span class="summary-label">متوسط السكر:</span>
+            <span class="summary-value" dir="ltr">${avg} mg/dL</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">التراكمي التقريبي (eA1C):</span>
+            <span class="summary-value" dir="ltr">${a1c} %</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">نسبة الانضباط (TIR):</span>
+            <span class="summary-value" dir="ltr">${tir} %</span>
+          </div>
+        </div>
+      `;
+    }
+
     const htmlContent = `
       <html dir="rtl" lang="ar">
         <head>
@@ -40,14 +68,21 @@ export default function HistoryPage() {
           <style>
             @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap');
             body { font-family: 'Cairo', system-ui, sans-serif; padding: 40px; color: #0f172a; margin: 0; }
-            .header { text-align: center; margin-bottom: 40px; border-bottom: 2px solid #3b82f6; padding-bottom: 20px; }
+            .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #3b82f6; padding-bottom: 20px; }
             .header h1 { color: #1e3a8a; margin: 0 0 10px 0; font-size: 28px; }
             .header p { color: #64748b; margin: 0; font-size: 14px; }
-            table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 20px; text-align: right; }
+            
+            .summary-box { display: flex; justify-content: space-around; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; margin-bottom: 30px; }
+            .summary-item { text-align: center; }
+            .summary-label { display: block; font-size: 12px; color: #64748b; margin-bottom: 5px; font-weight: bold; }
+            .summary-value { display: block; font-size: 18px; color: #0f172a; font-weight: bold; }
+
+            table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 10px; text-align: right; }
             th { background-color: #f8fafc; padding: 15px 12px; border-bottom: 2px solid #cbd5e1; color: #334155; font-weight: bold; }
             .footer { text-align: center; margin-top: 50px; font-size: 12px; color: #94a3b8; }
             @media print {
               body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+              .summary-box { border: 1px solid #cbd5e1; }
             }
           </style>
         </head>
@@ -57,6 +92,8 @@ export default function HistoryPage() {
             <p>تاريخ استخراج التقرير: ${format(new Date(), 'dd MMMM yyyy', { locale: ar })}</p>
           </div>
           
+          ${summaryHtml}
+
           <table>
             <thead>
               <tr>

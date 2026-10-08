@@ -221,6 +221,32 @@ export default function Dashboard() {
             </div>
           )}
         </div>
+
+        {/* بطاقة الملخص الطبي */}
+        {chartData.length > 0 && (() => {
+          const sum = chartData.reduce((acc, curr) => acc + curr.value, 0);
+          const avg = Math.round(sum / chartData.length);
+          const a1c = ((avg + 46.7) / 28.7).toFixed(1);
+          const inRange = chartData.filter(r => r.value >= 70 && r.value <= 180).length;
+          const tir = Math.round((inRange / chartData.length) * 100);
+
+          return (
+            <div className="grid grid-cols-3 gap-3 mt-6 border-t border-slate-100 pt-6">
+              <div className="text-center p-3 bg-blue-50 rounded-xl">
+                <p className="text-[10px] sm:text-xs text-slate-500 font-bold mb-1">متوسط السكر</p>
+                <p className="text-lg sm:text-xl font-extrabold text-blue-600">{avg} <span className="text-[10px] font-normal text-blue-400">mg/dL</span></p>
+              </div>
+              <div className="text-center p-3 bg-indigo-50 rounded-xl relative group">
+                <p className="text-[10px] sm:text-xs text-slate-500 font-bold mb-1">التراكمي التقريبي</p>
+                <p className="text-lg sm:text-xl font-extrabold text-indigo-600">{a1c} <span className="text-[10px] font-normal text-indigo-400">%</span></p>
+              </div>
+              <div className="text-center p-3 bg-green-50 rounded-xl">
+                <p className="text-[10px] sm:text-xs text-slate-500 font-bold mb-1">الانضباط (TIR)</p>
+                <p className="text-lg sm:text-xl font-extrabold text-green-600">{tir} <span className="text-[10px] font-normal text-green-400">%</span></p>
+              </div>
+            </div>
+          );
+        })()}
       </section>
     </div>
   );
