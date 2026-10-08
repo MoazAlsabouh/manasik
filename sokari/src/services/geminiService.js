@@ -14,6 +14,24 @@ const SYSTEM_INSTRUCTION = `أنت طبيب باطنة وسكري افتراضي
 4. قدم نصيحة عملية مبنية على الأرقام المعطاة ونوع الدواء والعمر.
 5. اختم دائماً بتنبيه لطيف بأن هذا التحليل هو للمساعدة والمتابعة، ولا يغني عن تعليمات طبيبه المعالج.`;
 
+// دالة ذكية تقوم بإعادة الطلب إذا كانت الخوادم مزدحمة (الخطأ 503)
+async function generateWithRetry(prompt, maxRetries = 3) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await model.generateContent(prompt);
+    } catch (error) {
+      // إذا كان الخطأ 503 ولم نستنفد المحاولات
+      if (error.status === 503 && i < maxRetries - 1) {
+        const delay = Math.pow(2, i) * 1000; // الانتظار: ثانية، ثانيتين، 4 ثوانٍ
+        console.warn(`الخوادم مزدحمة (503). جاري إعادة المحاولة بعد ${delay} مللي ثانية...`);
+        await new Promise(res => setTimeout(res, delay));
+      } else {
+        throw error;
+      }
+    }
+  }
+}
+
 export const analyzeReading = async (readingValue, isFasting, note, profile) => {
   try {
     const age = profile?.birthDate ? Math.floor((new Date() - new Date(profile.birthDate).getTime()) / 3.15576e+10) : 'غير محدد';
@@ -35,11 +53,13 @@ export const analyzeReading = async (readingValue, isFasting, note, profile) => 
     قدم له رداً مباشراً ومختصراً (في فقرتين بحد أقصى). حلل القراءة، ورد على ملاحظته (إن وجدت) بطريقة إيجابية وتشجيعية.
     `;
 
-    const result = await model.generateContent(prompt);
+    // استخدام دالة إعادة المحاولة بدلاً من الاستدعاء المباشر
+    const result = await generateWithRetry(prompt);
     return result.response.text();
   } catch (error) {
     console.error("Gemini API Error:", error);
-    return "عذراً يا صديقي، لم أتمكن من تحليل قراءتك في هذه اللحظة بسبب ضعف الاتصال. سأكون بانتظار قراءتك القادمة!";
+    // رسالة الخطأ الآمنة للمستخدم
+    return "عذراً يا صديقي، لم أتمكن من تحليل قراءتك في هذه اللحظة بسبب ضعف الاتصال أو انشغال الخوادم. يمكنك الضغط على زر إعادة المحاولة بجانب هذه الرسالة لاحقاً!";
   }
 };
 
@@ -67,10 +87,12 @@ export const generateWeeklyReport = async (readings, profile) => {
     3. نصيحة عملية واحدة يركز عليها في الأسبوع القادم.
     `;
 
-    const result = await model.generateContent(prompt);
+    // استخدام دالة إعادة المحاولة بدلاً من الاستدعاء المباشر
+    const result = await generateWithRetry(prompt);
     return result.response.text();
   } catch (error) {
     console.error("Gemini API Error:", error);
-    return "واجهت مشكلة في إعداد التقرير الأسبوعي. تأكد من اتصالك بالإنترنت وحاول مرة أخرى.";
+    // رسالة الخطأ الآمنة للمستخدم
+    return "واجهت مشكلة في إعداد التقرير بسبب الضغط الكبير على الخوادم حالياً. يرجى الانتظار قليلاً ثم المحاولة مرة أخرى.";
   }
 };
