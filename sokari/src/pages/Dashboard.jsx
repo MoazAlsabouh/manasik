@@ -136,11 +136,13 @@ export default function Dashboard() {
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <header className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-800">مرحباً! 👋</h1>
+          <h1 className="text-2xl font-extrabold text-slate-800">
+            مرحباً {profile?.name ? `يا ${profile.name.split(' ')[0]}` : ''}! 👋
+          </h1>
           <p className="text-slate-500 text-sm mt-1">كيف حال السكر لديك اليوم؟</p>
         </div>
-        <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold shadow-sm">
-          <Droplet size={24} className="fill-blue-500" />
+        <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center shadow-sm overflow-hidden border-2 border-blue-100 shrink-0">
+          <img src="/logo.png" alt="شعار سكري" className="w-10 h-10 object-contain drop-shadow-sm" onError={(e) => { e.target.style.display = 'none'; }} />
         </div>
       </header>
       
