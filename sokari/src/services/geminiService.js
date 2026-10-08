@@ -11,8 +11,7 @@ const SYSTEM_INSTRUCTION = `أنت طبيب باطنة وسكري افتراضي
 
 export const analyzeReading = async (readingValue, isFasting, note, profile) => {
   try {
-    const currentYear = new Date().getFullYear();
-    const age = profile?.birthYear ? currentYear - parseInt(profile.birthYear) : 'غير محدد';
+    const age = profile?.birthDate ? Math.floor((new Date() - new Date(profile.birthDate).getTime()) / 3.15576e+10) : 'غير محدد';
     const meds = profile?.medications?.length > 0 ? profile.medications.join('، ') : 'غير محدد';
 
     const prompt = `
@@ -41,8 +40,7 @@ export const analyzeReading = async (readingValue, isFasting, note, profile) => 
 
 export const generateWeeklyReport = async (readings, profile) => {
   try {
-    const currentYear = new Date().getFullYear();
-    const age = profile?.birthYear ? currentYear - parseInt(profile.birthYear) : 'غير محدد';
+    const age = profile?.birthDate ? Math.floor((new Date() - new Date(profile.birthDate).getTime()) / 3.15576e+10) : 'غير محدد';
     const meds = profile?.medications?.length > 0 ? profile.medications.join('، ') : 'غير محدد';
 
     const readingsText = readings.map(r => `- ${r.value} mg/dL (${r.isFasting ? 'صائم' : 'مفطر'}) - في ${new Date(r.createdAt).toLocaleDateString('ar-EG')}`).join('\n');
