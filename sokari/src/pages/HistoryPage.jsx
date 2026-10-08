@@ -18,8 +18,77 @@ export default function HistoryPage() {
   }, []);
 
   const handleExport = () => {
-    // في نسخة الإنتاج الفعلية، سيتم استخدام مكتبة لتوليد PDF
-    alert("سيتم تحميل السجل بصيغة PDF قريباً! (الميزة قيد التطوير)");
+    // فتح نافذة طباعة جديدة
+    const printWindow = window.open('', '_blank');
+    
+    // تجهيز صفوف الجدول
+    const tableRows = readings.map(r => `
+      <tr>
+        <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">${format(new Date(r.createdAt), 'yyyy/MM/dd')}</td>
+        <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">${format(new Date(r.createdAt), 'hh:mm a')}</td>
+        <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">${r.isFasting ? 'صائم' : 'بعد الأكل'}</td>
+        <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: ${r.value > 140 ? '#dc2626' : r.value < 70 ? '#d97706' : '#16a34a'};" dir="ltr">${r.value}</td>
+        <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #64748b;">${r.note || '-'}</td>
+      </tr>
+    `).join('');
+
+    // تصميم التقرير بالكامل (HTML + CSS)
+    const htmlContent = `
+      <html dir="rtl" lang="ar">
+        <head>
+          <title>سجل القراءات - سكري</title>
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap');
+            body { font-family: 'Cairo', system-ui, sans-serif; padding: 40px; color: #0f172a; margin: 0; }
+            .header { text-align: center; margin-bottom: 40px; border-bottom: 2px solid #3b82f6; padding-bottom: 20px; }
+            .header h1 { color: #1e3a8a; margin: 0 0 10px 0; font-size: 28px; }
+            .header p { color: #64748b; margin: 0; font-size: 14px; }
+            table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 20px; text-align: right; }
+            th { background-color: #f8fafc; padding: 15px 12px; border-bottom: 2px solid #cbd5e1; color: #334155; font-weight: bold; }
+            .footer { text-align: center; margin-top: 50px; font-size: 12px; color: #94a3b8; }
+            @media print {
+              body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>سجل قراءات السكر</h1>
+            <p>تاريخ استخراج التقرير: ${format(new Date(), 'dd MMMM yyyy', { locale: ar })}</p>
+          </div>
+          
+          <table>
+            <thead>
+              <tr>
+                <th>التاريخ</th>
+                <th>الوقت</th>
+                <th>حالة القياس</th>
+                <th>النتيجة (mg/dL)</th>
+                <th>ملاحظات المريض</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${tableRows}
+            </tbody>
+          </table>
+
+          <div class="footer">
+            تم استخراج هذا التقرير تلقائياً من تطبيق سكري © ${new Date().getFullYear()}
+          </div>
+          
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
   };
 
   return (
