@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../lib/firebase';
-import { Loader2, Lock, Droplet } from 'lucide-react';
+import { Loader2, Lock } from 'lucide-react';
+import appLogo from '../image/logo.png';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -29,8 +30,8 @@ export default function LoginPage() {
       <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-500">
         
         <div className="flex flex-col items-center mb-8">
-          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 shadow-sm mb-4">
-            <Droplet size={32} className="fill-blue-500" />
+          <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center shadow-sm overflow-hidden border-2 border-blue-100 mb-4 shrink-0">
+            <img src={appLogo} alt="شعار سكري" className="w-16 h-16 object-contain drop-shadow-sm" onError={(e) => { e.target.style.display = 'none'; }} />
           </div>
           <h1 className="text-2xl font-extrabold text-slate-800">تطبيق سُكَّري</h1>
           <p className="text-slate-500 text-sm mt-1 text-center">يرجى تسجيل الدخول للوصول إلى بياناتك</p>
