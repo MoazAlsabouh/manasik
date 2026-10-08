@@ -3,7 +3,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 const API_KEY = import.meta.env.VITE_AI_KEY;
 const genAI = new GoogleGenerativeAI(API_KEY);
 
-const model = genAI.getGenerativeModel({ model: "gemini-3.8-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash-lite" });
 
 const SYSTEM_INSTRUCTION = `أنت طبيب باطنة وسكري افتراضي محترف ومختص، تتحدث دائماً باللغة العربية. مهمتك تقديم تحليل علمي وطبي دقيق لمريض سكري يتابع حالته من المنزل.
 التعليمات:
