@@ -53,9 +53,10 @@ export default function SmartDoctor() {
 
   const loadNotesResponses = async () => {
     setIsLoadingNotes(true);
-    const allReadings = await getReadings(500); // جلب عدد أكبر للعثور على الملاحظات
-    const withResponses = allReadings.filter(r => r.aiResponse);
-    setNotesResponses(withResponses);
+    const allReadings = await getReadings(500);
+    // جلب كل القراءات التي تحتوي على ملاحظة، سواء تم الرد عليها أم لا
+    const withNotes = allReadings.filter(r => r.note && r.note.trim() !== '');
+    setNotesResponses(withNotes);
     setIsLoadingNotes(false);
   };
 
@@ -265,8 +266,9 @@ export default function SmartDoctor() {
           ) : (
             <div className="space-y-4">
               {visibleNotesResponses.map((item) => {
-                // التحقق مما إذا كان الرد يحمل عبارة الخطأ الشهيرة
-                const isError = item.aiResponse?.includes("لم أتمكن من تحليل قراءتك") || item.aiResponse?.includes("عذراً");
+                // التحقق مما إذا كان الرد يحمل عبارة الخطأ الشهيرة أو غير موجود أصلاً
+                const isError = !item.aiResponse || item.aiResponse.includes("لم أتمكن") || item.aiResponse.includes("عذراً");
+                const displayResponse = item.aiResponse || "انقطع الاتصال أو لم يتم استلام رد من الطبيب الذكي وقت إدخال القراءة. يرجى الضغط على (إعادة المحاولة) لجلب الرد الآن.";
                 const isRetrying = retryingId === item.id;
 
                 return (
@@ -318,7 +320,7 @@ export default function SmartDoctor() {
                         </div>
                         
                         <p className={`text-sm leading-relaxed whitespace-pre-wrap pl-4 border-r-2 ${isError ? 'text-red-500 border-red-200' : 'text-slate-600 border-blue-200'}`}>
-                          {item.aiResponse}
+                          {displayResponse}
                         </p>
                       </div>
                     )}
