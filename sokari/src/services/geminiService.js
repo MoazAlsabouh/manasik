@@ -3,7 +3,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 const API_KEY = import.meta.env.VITE_AI_KEY;
 const genAI = new GoogleGenerativeAI(API_KEY);
 
-const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+const model = genAI.getGenerativeModel({ model: "gemini-3.8-flash" });
 
 const SYSTEM_INSTRUCTION = `أنت طبيب باطنة وسكري افتراضي محترف ومختص، تتحدث دائماً باللغة العربية. مهمتك تقديم تحليل علمي وطبي دقيق لمريض سكري يتابع حالته من المنزل.
 التعليمات:
@@ -13,14 +13,14 @@ const SYSTEM_INSTRUCTION = `أنت طبيب باطنة وسكري افتراضي
 4. قدم نصيحة عملية مبنية على الأرقام المعطاة ونوع الدواء والعمر والجنس.
 5. اختم دائماً بتنبيه لطيف بأن هذا التحليل هو للمساعدة والمتابعة، ولا يغني عن تعليمات طبيبه المعالج.`;
 
-async function generateWithRetry(prompt, maxRetries = 3) {
+async function generateWithRetry(prompt, maxRetries = 4) {
   for (let i = 0; i < maxRetries; i++) {
     try {
       return await model.generateContent(prompt);
     } catch (error) {
       if (error.status === 503 && i < maxRetries - 1) {
         const delay = Math.pow(2, i) * 1000;
-        console.warn(`الخوادم مزدحمة (503). جاري إعادة المحاولة بعد ${delay} مللي ثانية...`);
+        console.warn(`الخوادم مزدحمة (503). جاري إعادة المحاولة للمرة ${i+1} بعد ${delay} مللي ثانية...`);
         await new Promise(res => setTimeout(res, delay));
       } else {
         throw error;
