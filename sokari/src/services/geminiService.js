@@ -56,7 +56,7 @@ export const analyzeReading = async (readingValue, isFasting, note, profile) => 
     return result.response.text();
   } catch (error) {
     console.error("Gemini API Error:", error);
-    return "عذراً، لم أتمكن من تحليل قراءتك في هذه اللحظة بسبب انشغال الخوادم. يمكنك الضغط على زر إعادة المحاولة بجانب هذه الرسالة لاحقاً!";
+    return `عذراً، لم أتمكن من تحليل قراءتك في هذه اللحظة بسبب انشغال الخوادم. يمكنك الضغط على زر إعادة المحاولة بجانب هذه الرسالة لاحقاً!\n\n(معلومة فنية: ${error.message})`;
   }
 };
 
