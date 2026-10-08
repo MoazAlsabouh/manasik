@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { generateWeeklyReport } from '../services/geminiService';
-import { getReadings, getProfile } from '../services/dbService';
-import { Loader2, Sparkles, HeartPulse, ChevronRight, MessageCircle } from 'lucide-react';
+import { generateWeeklyReport, analyzeReading } from '../services/geminiService';
+import { getReadings, getProfile, updateReading } from '../services/dbService';
+import { Loader2, Sparkles, HeartPulse, ChevronRight, MessageCircle, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
@@ -13,6 +13,9 @@ export default function SmartDoctor() {
   
   const [notesResponses, setNotesResponses] = useState([]);
   const [isLoadingNotes, setIsLoadingNotes] = useState(false);
+  
+  // تتبع حالة زر إعادة المحاولة لكل عنصر
+  const [retryingId, setRetryingId] = useState(null);
 
   useEffect(() => {
     if (activeTab === 'notes') {
@@ -23,7 +26,6 @@ export default function SmartDoctor() {
   const loadNotesResponses = async () => {
     setIsLoadingNotes(true);
     const allReadings = await getReadings(100);
-    // جلب القراءات التي تحتوي على رد من الذكاء الاصطناعي فقط
     const withResponses = allReadings.filter(r => r.aiResponse);
     setNotesResponses(withResponses);
     setIsLoadingNotes(false);
@@ -36,7 +38,6 @@ export default function SmartDoctor() {
     const allReadings = await getReadings(50);
     const profile = await getProfile();
     
-    // جلب قراءات آخر 7 أيام فقط
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
     const weeklyReadings = allReadings.filter(r => new Date(r.createdAt) >= weekAgo);
@@ -44,6 +45,21 @@ export default function SmartDoctor() {
     const aiReport = await generateWeeklyReport(weeklyReadings, profile);
     setReport(aiReport);
     setIsLoadingReport(false);
+  };
+
+  const handleRetry = async (item) => {
+    setRetryingId(item.id);
+    const profile = await getProfile();
+    
+    // إعادة إرسال الطلب لجيميناي
+    const newResponse = await analyzeReading(item.value, item.isFasting, item.note, profile);
+    
+    // تحديث قاعدة البيانات بالرد الجديد
+    await updateReading(item.id, { aiResponse: newResponse });
+    
+    // تحديث الواجهة مباشرة
+    setNotesResponses(prev => prev.map(r => r.id === item.id ? { ...r, aiResponse: newResponse } : r));
+    setRetryingId(null);
   };
 
   return (
@@ -137,33 +153,57 @@ export default function SmartDoctor() {
                <p className="text-sm text-slate-500">عندما تقوم بإضافة قراءة جديدة مع ملاحظة، سيتم حفظ رد الطبيب هنا للرجوع إليه.</p>
              </div>
           ) : (
-            notesResponses.map((item) => (
-              <div key={item.id} className="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100">
-                <div className="flex justify-between items-start mb-3 border-b border-slate-100 pb-3">
-                  <div>
-                    <span className="text-xs font-bold bg-slate-100 text-slate-600 px-2 py-1 rounded-md">
-                      سكر {item.isFasting ? 'صائم' : 'بعد الأكل'}: {item.value}
+            notesResponses.map((item) => {
+              // التحقق مما إذا كان الرد يحمل عبارة الخطأ الشهيرة
+              const isError = item.aiResponse?.includes("لم أتمكن من تحليل قراءتك");
+              const isRetrying = retryingId === item.id;
+
+              return (
+                <div key={item.id} className="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100">
+                  <div className="flex justify-between items-start mb-3 border-b border-slate-100 pb-3">
+                    <div>
+                      <span className="text-xs font-bold bg-slate-100 text-slate-600 px-2 py-1 rounded-md">
+                        سكر {item.isFasting ? 'صائم' : 'بعد الأكل'}: {item.value}
+                      </span>
+                      <p className="text-slate-800 font-bold mt-2 text-sm flex gap-2">
+                        <span className="text-slate-400">ملاحظتك:</span> 
+                        {item.note}
+                      </p>
+                    </div>
+                    <span className="text-[10px] text-slate-400 whitespace-nowrap">
+                      {format(new Date(item.createdAt), 'dd MMMM yyyy', { locale: ar })}
                     </span>
-                    <p className="text-slate-800 font-bold mt-2 text-sm flex gap-2">
-                      <span className="text-slate-400">ملاحظتك:</span> 
-                      {item.note}
+                  </div>
+                  <div className="pt-2">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2 text-blue-700 font-bold text-sm">
+                        <Sparkles size={16} />
+                        <span>رد الطبيب:</span>
+                      </div>
+                      
+                      {/* زر إعادة المحاولة يظهر فقط في حال كان الرد خطأ */}
+                      {isError && (
+                        <button 
+                          onClick={() => handleRetry(item)}
+                          disabled={isRetrying}
+                          className="flex items-center gap-1 text-xs bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors font-bold disabled:opacity-50"
+                        >
+                          {isRetrying ? (
+                            <><Loader2 size={14} className="animate-spin" /> جاري التحليل...</>
+                          ) : (
+                            <><RefreshCw size={14} /> إعادة المحاولة</>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                    
+                    <p className={`text-sm leading-relaxed whitespace-pre-wrap pl-4 border-r-2 ${isError ? 'text-red-500 border-red-200' : 'text-slate-600 border-blue-200'}`}>
+                      {item.aiResponse}
                     </p>
                   </div>
-                  <span className="text-[10px] text-slate-400 whitespace-nowrap">
-                    {format(new Date(item.createdAt), 'dd MMMM yyyy', { locale: ar })}
-                  </span>
                 </div>
-                <div className="pt-2">
-                  <div className="flex items-center gap-2 mb-2 text-blue-700 font-bold text-sm">
-                    <Sparkles size={16} />
-                    <span>رد الطبيب:</span>
-                  </div>
-                  <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap pl-4 border-r-2 border-blue-200">
-                    {item.aiResponse}
-                  </p>
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       )}
