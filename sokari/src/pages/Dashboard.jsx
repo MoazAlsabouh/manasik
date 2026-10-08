@@ -4,6 +4,7 @@ import { Loader2, Droplet, Sparkles, Activity, Info } from 'lucide-react';
 import { saveReading, getReadings, getProfile, updateReading, getWeeklyReports, saveWeeklyReport } from '../services/dbService';
 import { analyzeReading, generateWeeklyReport } from '../services/geminiService';
 import { format, subDays, isAfter, isFriday, previousFriday, startOfDay, isBefore } from 'date-fns';
+import appLogo from '../image/logo.png';
 
 export default function Dashboard() {
   const [readings, setReadings] = useState([]);
@@ -142,7 +143,7 @@ export default function Dashboard() {
           <p className="text-slate-500 text-sm mt-1">كيف حال السكر لديك اليوم؟</p>
         </div>
         <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center shadow-sm overflow-hidden border-2 border-blue-100 shrink-0">
-          <img src="/logo.png" alt="شعار سكري" className="w-10 h-10 object-contain drop-shadow-sm" onError={(e) => { e.target.style.display = 'none'; }} />
+          <img src={appLogo} alt="شعار سكري" className="w-10 h-10 object-contain drop-shadow-sm" onError={(e) => { e.target.style.display = 'none'; }} />
         </div>
       </header>
       
