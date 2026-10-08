@@ -238,6 +238,9 @@ export default function ProfilePage() {
                 إلغاء
               </button>
             </div>
+          </form>
+        )}
+      </section>
     </div>
   );
 }
