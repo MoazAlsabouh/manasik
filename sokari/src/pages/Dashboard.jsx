@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { Loader2, Droplet, Sparkles, Activity } from 'lucide-react';
-import { saveReading, getReadings, getProfile } from '../services/dbService';
+import { saveReading, getReadings, getProfile, updateReading } from '../services/dbService';
 import { analyzeReading } from '../services/geminiService';
 import { format, subDays, isAfter } from 'date-fns';
 
@@ -41,12 +41,16 @@ export default function Dashboard() {
     const readingValue = parseInt(value);
     
     // الحفظ في قاعدة البيانات
-    await saveReading(readingValue, isFasting, note);
+    const savedDoc = await saveReading(readingValue, isFasting, note);
     
     // إرسال لجيميناي إذا كان هناك ملاحظة
     if (note.trim() !== '') {
        const response = await analyzeReading(readingValue, isFasting, note, profile);
        setAiResponse(response);
+       
+       if(savedDoc.success) {
+           await updateReading(savedDoc.id, { aiResponse: response });
+       }
     }
 
     // إعادة تعيين الحقول

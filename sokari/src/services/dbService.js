@@ -40,6 +40,16 @@ export const getReadings = async (limitCount = 100) => {
   }
 };
 
+export const updateReading = async (id, data) => {
+  try {
+    await setDoc(doc(db, READINGS_COLLECTION, id), data, { merge: true });
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating reading: ", error);
+    return { success: false, error };
+  }
+};
+
 export const saveProfile = async (profileData) => {
   try {
     await setDoc(doc(db, 'settings', PROFILE_DOC), profileData, { merge: true });
