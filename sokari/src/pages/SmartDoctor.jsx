@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { generateWeeklyReport, analyzeReading } from '../services/geminiService';
 import { getReadings, getProfile, updateReading, saveWeeklyReport, getWeeklyReports } from '../services/dbService';
-import { Loader2, Sparkles, HeartPulse, ChevronRight, MessageCircle, RefreshCw, History, Calendar } from 'lucide-react';
+import { Loader2, Sparkles, HeartPulse, ChevronRight, MessageCircle, RefreshCw, History, Calendar, ChevronDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
@@ -13,9 +13,11 @@ export default function SmartDoctor() {
   
   const [pastReports, setPastReports] = useState([]);
   const [isLoadingPastReports, setIsLoadingPastReports] = useState(false);
+  const [visibleReportsCount, setVisibleReportsCount] = useState(5);
   
   const [notesResponses, setNotesResponses] = useState([]);
   const [isLoadingNotes, setIsLoadingNotes] = useState(false);
+  const [visibleNotesCount, setVisibleNotesCount] = useState(5);
   
   // تتبع حالة زر إعادة المحاولة لكل عنصر
   const [retryingId, setRetryingId] = useState(null);
@@ -30,14 +32,14 @@ export default function SmartDoctor() {
 
   const loadPastReports = async () => {
     setIsLoadingPastReports(true);
-    const data = await getWeeklyReports();
+    const data = await getWeeklyReports(100);
     setPastReports(data);
     setIsLoadingPastReports(false);
   };
 
   const loadNotesResponses = async () => {
     setIsLoadingNotes(true);
-    const allReadings = await getReadings(100);
+    const allReadings = await getReadings(500); // جلب عدد أكبر للعثور على الملاحظات
     const withResponses = allReadings.filter(r => r.aiResponse);
     setNotesResponses(withResponses);
     setIsLoadingNotes(false);
@@ -80,6 +82,9 @@ export default function SmartDoctor() {
     setNotesResponses(prev => prev.map(r => r.id === item.id ? { ...r, aiResponse: newResponse } : r));
     setRetryingId(null);
   };
+
+  const visiblePastReports = pastReports.slice(0, visibleReportsCount);
+  const visibleNotesResponses = notesResponses.slice(0, visibleNotesCount);
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -157,7 +162,7 @@ export default function SmartDoctor() {
               </div>
             ) : (
               <div className="space-y-6">
-                {pastReports.map((pastReport, index) => (
+                {visiblePastReports.map((pastReport, index) => (
                   <div key={pastReport.id} className="bg-slate-50 p-5 rounded-2xl border border-slate-200">
                     <div className="flex items-center gap-2 mb-3 pb-3 border-b border-slate-200/60">
                       <Calendar size={16} className="text-slate-500" />
@@ -171,6 +176,16 @@ export default function SmartDoctor() {
                     </div>
                   </div>
                 ))}
+                
+                {visibleReportsCount < pastReports.length && (
+                  <button 
+                    onClick={() => setVisibleReportsCount(prev => prev + 5)}
+                    className="w-full mt-4 bg-slate-50 border border-slate-200 text-slate-600 font-bold py-3 rounded-xl hover:bg-slate-100 transition-colors flex justify-center items-center gap-2"
+                  >
+                    عرض 5 تقارير إضافية
+                    <ChevronDown size={18} className="text-slate-400" />
+                  </button>
+                )}
               </div>
             )}
           </section>
@@ -210,57 +225,69 @@ export default function SmartDoctor() {
                <p className="text-sm text-slate-500">عندما تقوم بإضافة قراءة جديدة مع ملاحظة، سيتم حفظ رد الطبيب هنا للرجوع إليه.</p>
              </div>
           ) : (
-            notesResponses.map((item) => {
-              // التحقق مما إذا كان الرد يحمل عبارة الخطأ الشهيرة
-              const isError = item.aiResponse?.includes("لم أتمكن من تحليل قراءتك") || item.aiResponse?.includes("عذراً");
-              const isRetrying = retryingId === item.id;
+            <div className="space-y-4">
+              {visibleNotesResponses.map((item) => {
+                // التحقق مما إذا كان الرد يحمل عبارة الخطأ الشهيرة
+                const isError = item.aiResponse?.includes("لم أتمكن من تحليل قراءتك") || item.aiResponse?.includes("عذراً");
+                const isRetrying = retryingId === item.id;
 
-              return (
-                <div key={item.id} className="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100">
-                  <div className="flex justify-between items-start mb-3 border-b border-slate-100 pb-3">
-                    <div>
-                      <span className="text-xs font-bold bg-slate-100 text-slate-600 px-2 py-1 rounded-md">
-                        سكر {item.isFasting ? 'صائم' : 'بعد الأكل'}: {item.value}
+                return (
+                  <div key={item.id} className="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100">
+                    <div className="flex justify-between items-start mb-3 border-b border-slate-100 pb-3">
+                      <div>
+                        <span className="text-xs font-bold bg-slate-100 text-slate-600 px-2 py-1 rounded-md">
+                          سكر {item.isFasting ? 'صائم' : 'بعد الأكل'}: {item.value}
+                        </span>
+                        <p className="text-slate-800 font-bold mt-2 text-sm flex gap-2">
+                          <span className="text-slate-400">ملاحظتك:</span> 
+                          {item.note}
+                        </p>
+                      </div>
+                      <span className="text-[10px] text-slate-400 whitespace-nowrap">
+                        {format(new Date(item.createdAt), 'dd MMMM yyyy', { locale: ar })}
                       </span>
-                      <p className="text-slate-800 font-bold mt-2 text-sm flex gap-2">
-                        <span className="text-slate-400">ملاحظتك:</span> 
-                        {item.note}
-                      </p>
                     </div>
-                    <span className="text-[10px] text-slate-400 whitespace-nowrap">
-                      {format(new Date(item.createdAt), 'dd MMMM yyyy', { locale: ar })}
-                    </span>
-                  </div>
-                  <div className="pt-2">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2 text-blue-700 font-bold text-sm">
-                        <Sparkles size={16} />
-                        <span>رد الطبيب:</span>
+                    <div className="pt-2">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2 text-blue-700 font-bold text-sm">
+                          <Sparkles size={16} />
+                          <span>رد الطبيب:</span>
+                        </div>
+                        
+                        {/* زر إعادة المحاولة يظهر فقط في حال كان الرد خطأ */}
+                        {isError && (
+                          <button 
+                            onClick={() => handleRetry(item)}
+                            disabled={isRetrying}
+                            className="flex items-center gap-1 text-xs bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors font-bold disabled:opacity-50"
+                          >
+                            {isRetrying ? (
+                              <><Loader2 size={14} className="animate-spin" /> جاري التحليل...</>
+                            ) : (
+                              <><RefreshCw size={14} /> إعادة المحاولة</>
+                            )}
+                          </button>
+                        )}
                       </div>
                       
-                      {/* زر إعادة المحاولة يظهر فقط في حال كان الرد خطأ */}
-                      {isError && (
-                        <button 
-                          onClick={() => handleRetry(item)}
-                          disabled={isRetrying}
-                          className="flex items-center gap-1 text-xs bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors font-bold disabled:opacity-50"
-                        >
-                          {isRetrying ? (
-                            <><Loader2 size={14} className="animate-spin" /> جاري التحليل...</>
-                          ) : (
-                            <><RefreshCw size={14} /> إعادة المحاولة</>
-                          )}
-                        </button>
-                      )}
+                      <p className={`text-sm leading-relaxed whitespace-pre-wrap pl-4 border-r-2 ${isError ? 'text-red-500 border-red-200' : 'text-slate-600 border-blue-200'}`}>
+                        {item.aiResponse}
+                      </p>
                     </div>
-                    
-                    <p className={`text-sm leading-relaxed whitespace-pre-wrap pl-4 border-r-2 ${isError ? 'text-red-500 border-red-200' : 'text-slate-600 border-blue-200'}`}>
-                      {item.aiResponse}
-                    </p>
                   </div>
-                </div>
-              );
-            })
+                );
+              })}
+              
+              {visibleNotesCount < notesResponses.length && (
+                <button 
+                  onClick={() => setVisibleNotesCount(prev => prev + 5)}
+                  className="w-full mt-4 bg-white border border-slate-200 text-slate-600 font-bold py-3 rounded-xl hover:bg-slate-50 transition-colors flex justify-center items-center gap-2"
+                >
+                  عرض 5 إجابات إضافية
+                  <ChevronDown size={18} className="text-slate-400" />
+                </button>
+              )}
+            </div>
           )}
         </div>
       )}
