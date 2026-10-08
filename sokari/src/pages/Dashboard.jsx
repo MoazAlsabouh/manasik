@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { Loader2, Droplet, Sparkles, Activity, Info } from 'lucide-react';
-import { saveReading, getReadings, getProfile, updateReading } from '../services/dbService';
-import { analyzeReading } from '../services/geminiService';
-import { format, subDays, isAfter } from 'date-fns';
+import { saveReading, getReadings, getProfile, updateReading, getWeeklyReports, saveWeeklyReport } from '../services/dbService';
+import { analyzeReading, generateWeeklyReport } from '../services/geminiService';
+import { format, subDays, isAfter, isFriday, previousFriday, startOfDay, isBefore } from 'date-fns';
 
 export default function Dashboard() {
   const [readings, setReadings] = useState([]);
@@ -22,7 +22,52 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchData();
+    checkAndAutoGenerateReport();
   }, []);
+
+  const checkAndAutoGenerateReport = async () => {
+    try {
+      // منع تكرار الفحص في نفس الجلسة لتخفيف الضغط
+      if (sessionStorage.getItem('autoReportChecked')) return;
+      sessionStorage.setItem('autoReportChecked', 'true');
+
+      const reports = await getWeeklyReports(1);
+      const latestReport = reports[0];
+      
+      const now = new Date();
+      // تحديد الجمعة المستهدفة (اليوم إذا كان جمعة، أو الجمعة الماضية)
+      const targetFriday = isFriday(now) ? startOfDay(now) : startOfDay(previousFriday(now));
+
+      let needsReport = false;
+      if (!latestReport) {
+          needsReport = true;
+      } else {
+          const reportDate = new Date(latestReport.createdAt);
+          // إذا كان آخر تقرير قبل بداية هذه الجمعة، نولد تقريراً جديداً
+          if (isBefore(reportDate, targetFriday)) {
+              needsReport = true;
+          }
+      }
+
+      if (needsReport) {
+          const allReadings = await getReadings(50);
+          const userProfile = await getProfile();
+          const weekAgo = new Date();
+          weekAgo.setDate(weekAgo.getDate() - 7);
+          const weeklyReadings = allReadings.filter(r => new Date(r.createdAt) >= weekAgo);
+          
+          // التوليد فقط إذا كان هناك قراءات خلال الأسبوع لتجنب تقرير فارغ
+          if (weeklyReadings.length > 0) {
+              const aiReport = await generateWeeklyReport(weeklyReadings, userProfile);
+              if (aiReport && !aiReport.includes("واجهت مشكلة") && !aiReport.includes("عذراً")) {
+                  await saveWeeklyReport(aiReport);
+              }
+          }
+      }
+    } catch (error) {
+      console.error("Auto generation error:", error);
+    }
+  };
 
   const fetchData = async () => {
     // جلب القراءات
