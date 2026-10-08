@@ -22,6 +22,13 @@ export default function SmartDoctor() {
     );
   };
   
+  const [expandedNotes, setExpandedNotes] = useState([]);
+  const toggleNote = (id) => {
+    setExpandedNotes(prev => 
+      prev.includes(id) ? prev.filter(rId => rId !== id) : [...prev, id]
+    );
+  };
+  
   const [notesResponses, setNotesResponses] = useState([]);
   const [isLoadingNotes, setIsLoadingNotes] = useState(false);
   const [visibleNotesCount, setVisibleNotesCount] = useState(5);
@@ -263,48 +270,58 @@ export default function SmartDoctor() {
                 const isRetrying = retryingId === item.id;
 
                 return (
-                  <div key={item.id} className="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100">
-                    <div className="flex justify-between items-start mb-3 border-b border-slate-100 pb-3">
-                      <div>
-                        <span className="text-xs font-bold bg-slate-100 text-slate-600 px-2 py-1 rounded-md">
-                          سكر {item.isFasting ? 'صائم' : 'بعد الأكل'}: {item.value}
-                        </span>
-                        <p className="text-slate-800 font-bold mt-2 text-sm flex gap-2">
-                          <span className="text-slate-400">ملاحظتك:</span> 
-                          {item.note}
+                  <div key={item.id} className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden transition-all">
+                    <button 
+                      onClick={() => toggleNote(item.id)}
+                      className="w-full flex justify-between items-center p-5 text-right hover:bg-slate-50 transition-colors"
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-xs font-bold bg-slate-100 text-slate-600 px-2 py-1 rounded-md">
+                            سكر {item.isFasting ? 'صائم' : 'بعد الأكل'}: {item.value}
+                          </span>
+                          <span className="text-[10px] text-slate-400 whitespace-nowrap">
+                            {format(new Date(item.createdAt), 'dd MMMM yyyy', { locale: ar })}
+                          </span>
+                        </div>
+                        <p className="text-slate-800 font-bold text-sm flex gap-2">
+                          <span className="text-slate-400 shrink-0">ملاحظتك:</span> 
+                          <span className="line-clamp-1">{item.note}</span>
                         </p>
                       </div>
-                      <span className="text-[10px] text-slate-400 whitespace-nowrap">
-                        {format(new Date(item.createdAt), 'dd MMMM yyyy', { locale: ar })}
-                      </span>
-                    </div>
-                    <div className="pt-2">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2 text-blue-700 font-bold text-sm">
-                          <Sparkles size={16} />
-                          <span>رد الطبيب:</span>
+                      <div className="text-slate-400 shrink-0 mr-4">
+                        {expandedNotes.includes(item.id) ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                      </div>
+                    </button>
+                    
+                    {expandedNotes.includes(item.id) && (
+                      <div className="p-5 pt-0 border-t border-slate-100/60 bg-white">
+                        <div className="flex items-center justify-between mb-2 mt-4">
+                          <div className="flex items-center gap-2 text-blue-700 font-bold text-sm">
+                            <Sparkles size={16} />
+                            <span>رد الطبيب:</span>
+                          </div>
+                          
+                          {isError && (
+                            <button 
+                              onClick={() => handleRetry(item)}
+                              disabled={isRetrying}
+                              className="flex items-center gap-1 text-xs bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors font-bold disabled:opacity-50"
+                            >
+                              {isRetrying ? (
+                                <><Loader2 size={14} className="animate-spin" /> جاري التحليل...</>
+                              ) : (
+                                <><RefreshCw size={14} /> إعادة المحاولة</>
+                              )}
+                            </button>
+                          )}
                         </div>
                         
-                        {/* زر إعادة المحاولة يظهر فقط في حال كان الرد خطأ */}
-                        {isError && (
-                          <button 
-                            onClick={() => handleRetry(item)}
-                            disabled={isRetrying}
-                            className="flex items-center gap-1 text-xs bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors font-bold disabled:opacity-50"
-                          >
-                            {isRetrying ? (
-                              <><Loader2 size={14} className="animate-spin" /> جاري التحليل...</>
-                            ) : (
-                              <><RefreshCw size={14} /> إعادة المحاولة</>
-                            )}
-                          </button>
-                        )}
+                        <p className={`text-sm leading-relaxed whitespace-pre-wrap pl-4 border-r-2 ${isError ? 'text-red-500 border-red-200' : 'text-slate-600 border-blue-200'}`}>
+                          {item.aiResponse}
+                        </p>
                       </div>
-                      
-                      <p className={`text-sm leading-relaxed whitespace-pre-wrap pl-4 border-r-2 ${isError ? 'text-red-500 border-red-200' : 'text-slate-600 border-blue-200'}`}>
-                        {item.aiResponse}
-                      </p>
-                    </div>
+                    )}
                   </div>
                 );
               })}
