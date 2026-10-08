@@ -1,3 +1,10 @@
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
+const API_KEY = import.meta.env.VITE_AI_KEY;
+const genAI = new GoogleGenerativeAI(API_KEY);
+
+const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash-lite" });
+
 const SYSTEM_INSTRUCTION = `أنت طبيب باطنة وسكري افتراضي محترف ومختص، تتحدث دائماً باللغة العربية. مهمتك تقديم تحليل علمي وطبي دقيق لمريض سكري يتابع حالته من المنزل.
 التعليمات:
 1. كن علمياً ودقيقاً وواقعياً تماماً في تحليلك. لا تقلل أبداً من خطورة الوضع من باب الطمأنينة إذا كانت القراءة خطيرة (مرتفعة جداً أو منخفضة جداً).
@@ -9,33 +16,15 @@ const SYSTEM_INSTRUCTION = `أنت طبيب باطنة وسكري افتراضي
 async function generateWithRetry(prompt, maxRetries = 4) {
   for (let i = 0; i < maxRetries; i++) {
     try {
-      // نتصل بالخادم الوسيط الخاص بنا (Vercel) بدلاً من جوجل مباشرة لفك الحظر
-      const response = await fetch('/api/gemini', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ prompt }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        if (response.status === 503 && i < maxRetries - 1) {
-          const delay = Math.pow(2, i) * 1000;
-          console.warn(`الخوادم مزدحمة (503). جاري إعادة المحاولة للمرة ${i+1} بعد ${delay} مللي ثانية...`);
-          await new Promise(res => setTimeout(res, delay));
-          continue;
-        }
-        throw new Error(data.error || 'Server Error');
-      }
-
-      // محاكاة نفس هيكل الاستجابة القديم حتى لا نضطر لتعديل باقي الكود
-      return { response: { text: () => data.text } };
+      return await model.generateContent(prompt);
     } catch (error) {
-      if (i === maxRetries - 1) throw error;
-      const delay = Math.pow(2, i) * 1000;
-      await new Promise(res => setTimeout(res, delay));
+      if (error.status === 503 && i < maxRetries - 1) {
+        const delay = Math.pow(2, i) * 1000;
+        console.warn(`الخوادم مزدحمة (503). جاري إعادة المحاولة للمرة ${i+1} بعد ${delay} مللي ثانية...`);
+        await new Promise(res => setTimeout(res, delay));
+      } else {
+        throw error;
+      }
     }
   }
 }
