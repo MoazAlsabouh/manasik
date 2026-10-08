@@ -238,32 +238,6 @@ export default function ProfilePage() {
                 إلغاء
               </button>
             </div>
-          </form>
-        )}
-      </section>
-
-      {/* زر المطورين: مسح بيانات الاختبار */}
-      {!isEditing && (
-        <div className="mt-8 p-5 bg-red-50 border border-red-200 rounded-[2rem] text-center">
-          <h3 className="text-red-700 font-bold mb-2">أدوات المطور (مسح الاختبارات)</h3>
-          <p className="text-xs text-red-600 mb-4 leading-relaxed">هذا الزر سيقوم بمسح كافة القراءات والتقارير الأسبوعية تماماً استعداداً للاستخدام الحقيقي، مع الاحتفاظ بحسابك وبياناتك الشخصية أعلاه.</p>
-          <button 
-            onClick={async () => {
-              if (window.confirm('هل أنت متأكد من مسح جميع القراءات والتقارير الوهمية؟')) {
-                setIsLoading(true);
-                const { wipeAllTestData } = await import('../services/dbService');
-                await wipeAllTestData();
-                alert('تم مسح جميع البيانات بنجاح! الصفحة ستقوم بتحديث نفسها الآن.');
-                window.location.reload();
-              }
-            }}
-            disabled={isLoading}
-            className="bg-red-600 text-white px-6 py-3 rounded-xl text-sm font-bold shadow-sm hover:bg-red-700 transition-colors disabled:opacity-50 w-full sm:w-auto mx-auto"
-          >
-            {isLoading ? 'جاري المسح العميق...' : 'حذف جميع القراءات والتقارير'}
-          </button>
-        </div>
-      )}
     </div>
   );
 }
