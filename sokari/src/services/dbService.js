@@ -1,5 +1,5 @@
 import { db } from '../lib/firebase';
-import { collection, addDoc, getDocs, query, orderBy, limit, doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, orderBy, limit, doc, setDoc, getDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
 
 // نحن نستخدم Collection واحدة كما طلبت لأن المشروع شخصي ولا يحتاج تسجيل دخول متعدد
 const READINGS_COLLECTION = 'sugar_readings';
@@ -105,5 +105,26 @@ export const getProfile = async () => {
   } catch (error) {
     console.error("Error getting profile: ", error);
     return null;
+  }
+};
+
+export const wipeAllTestData = async () => {
+  try {
+    // جلب وحذف جميع القراءات
+    const q1 = query(collection(db, READINGS_COLLECTION));
+    const snapshot1 = await getDocs(q1);
+    const deletePromises1 = snapshot1.docs.map(d => deleteDoc(doc(db, READINGS_COLLECTION, d.id)));
+    await Promise.all(deletePromises1);
+
+    // جلب وحذف جميع التقارير الأسبوعية
+    const q2 = query(collection(db, WEEKLY_REPORTS_COLLECTION));
+    const snapshot2 = await getDocs(q2);
+    const deletePromises2 = snapshot2.docs.map(d => deleteDoc(doc(db, WEEKLY_REPORTS_COLLECTION, d.id)));
+    await Promise.all(deletePromises2);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error wiping data: ", error);
+    return { success: false, error };
   }
 };
