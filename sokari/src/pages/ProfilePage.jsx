@@ -16,12 +16,13 @@ export default function ProfilePage() {
 
   const [name, setName] = useState('');
   const [birthDate, setBirthDate] = useState('');
+  const [gender, setGender] = useState('male');
   const [selectedMeds, setSelectedMeds] = useState([]);
   const [otherMed, setOtherMed] = useState('');
   
   const [isLoading, setIsLoading] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
-  const [isEditing, setIsEditing] = useState(false); // تعديل: دائماً يبدأ بوضع العرض
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -29,6 +30,7 @@ export default function ProfilePage() {
       if (data && data.name) {
         setName(data.name || '');
         setBirthDate(data.birthDate || '');
+        setGender(data.gender || 'male');
         
         const knownMeds = medicationsList.map(m => m.name);
         const savedKnownMeds = (data.medications || []).filter(m => knownMeds.includes(m));
@@ -63,14 +65,14 @@ export default function ProfilePage() {
 
     await saveProfile({
       name,
-      birthDate, // حفظ التاريخ كامل
+      birthDate,
+      gender,
       medications: finalMeds
     });
 
     setIsLoading(false);
     setIsSaved(true);
     
-    // العودة لوضع العرض بعد ثانية
     setTimeout(() => {
       setIsSaved(false);
       setIsEditing(false);
@@ -100,15 +102,16 @@ export default function ProfilePage() {
 
       <section className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100">
         {!isEditing ? (
-          // وضع عرض البيانات (Read-Only)
           <div className="space-y-6">
             <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
               <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center">
                 <User size={24} />
               </div>
               <div>
-                <p className="text-sm text-slate-500 font-bold">الاسم</p>
-                <p className="text-lg font-bold text-slate-800">{name}</p>
+                <p className="text-sm text-slate-500 font-bold">الاسم (والجنس)</p>
+                <p className="text-lg font-bold text-slate-800">
+                  {name || 'غير محدد'} <span className="text-sm font-normal text-slate-400">({gender === 'female' ? 'أنثى' : 'ذكر'})</span>
+                </p>
               </div>
             </div>
 
@@ -119,7 +122,7 @@ export default function ProfilePage() {
               <div>
                 <p className="text-sm text-slate-500 font-bold">العمر</p>
                 <p className="text-lg font-bold text-slate-800">
-                  {currentAge} سنة <span className="text-sm font-normal text-slate-400">({birthDate})</span>
+                  {currentAge} سنة <span className="text-sm font-normal text-slate-400">({birthDate || 'غير محدد'})</span>
                 </p>
               </div>
             </div>
@@ -152,7 +155,6 @@ export default function ProfilePage() {
             </button>
           </div>
         ) : (
-          // وضع تعديل البيانات (Edit Mode)
           <form onSubmit={handleSave} className="space-y-5 animate-in fade-in duration-300">
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-2">الاسم</label>
@@ -166,16 +168,30 @@ export default function ProfilePage() {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">تاريخ الميلاد (لحساب العمر)</label>
-              <input 
-                type="date" 
-                value={birthDate}
-                onChange={(e) => setBirthDate(e.target.value)}
-                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow text-left"
-                dir="ltr"
-                required
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">الجنس</label>
+                <select 
+                  value={gender}
+                  onChange={(e) => setGender(e.target.value)}
+                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow"
+                >
+                  <option value="male">ذكر</option>
+                  <option value="female">أنثى</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">تاريخ الميلاد</label>
+                <input 
+                  type="date" 
+                  value={birthDate}
+                  onChange={(e) => setBirthDate(e.target.value)}
+                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow text-left"
+                  dir="ltr"
+                  required
+                />
+              </div>
             </div>
 
             <div>
@@ -214,15 +230,13 @@ export default function ProfilePage() {
                 {isSaved ? <><CheckCircle2 size={20} /> تم الحفظ</> : 'حفظ البيانات'}
               </button>
               
-              {name && birthDate && !isSaved && (
-                <button 
-                  type="button"
-                  onClick={() => setIsEditing(false)}
-                  className="px-6 bg-slate-100 text-slate-600 font-bold py-3 rounded-xl hover:bg-slate-200 transition-colors"
-                >
-                  إلغاء
-                </button>
-              )}
+              <button 
+                type="button"
+                onClick={() => setIsEditing(false)}
+                className="px-6 bg-slate-100 text-slate-600 font-bold py-3 rounded-xl hover:bg-slate-200 transition-colors"
+              >
+                إلغاء
+              </button>
             </div>
           </form>
         )}
