@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
-import { Loader2, Droplet, Sparkles, Activity } from 'lucide-react';
+import { Loader2, Droplet, Sparkles, Activity, Info } from 'lucide-react';
 import { saveReading, getReadings, getProfile, updateReading } from '../services/dbService';
 import { analyzeReading } from '../services/geminiService';
 import { format, subDays, isAfter } from 'date-fns';
@@ -17,15 +17,16 @@ export default function Dashboard() {
   // UI State
   const [isLoading, setIsLoading] = useState(false);
   const [aiResponse, setAiResponse] = useState('');
-  const [timeFilter, setTimeFilter] = useState('week'); // week, month, year
+  const [timeFilter, setTimeFilter] = useState('week'); // week, month, year, custom
+  const [customStartDate, setCustomStartDate] = useState('');
 
   useEffect(() => {
     fetchData();
   }, []);
 
   const fetchData = async () => {
-    // نجلب آخر 100 قراءة للفلترة
-    const data = await getReadings(100);
+    // جلب القراءات
+    const data = await getReadings(500); // زيادة العدد ليدعم التواريخ المخصصة القديمة
     setReadings(data);
     const userProfile = await getProfile();
     setProfile(userProfile);
@@ -63,11 +64,17 @@ export default function Dashboard() {
   // فلترة المخطط البياني
   const getFilteredData = () => {
     const now = new Date();
-    let daysToSubtract = 7;
-    if (timeFilter === 'month') daysToSubtract = 30;
-    if (timeFilter === 'year') daysToSubtract = 365;
+    let cutoffDate;
 
-    const cutoffDate = subDays(now, daysToSubtract);
+    if (timeFilter === 'custom' && customStartDate) {
+      cutoffDate = new Date(customStartDate);
+      cutoffDate.setHours(0, 0, 0, 0); // من بداية اليوم المختار
+    } else {
+      let daysToSubtract = 7;
+      if (timeFilter === 'month') daysToSubtract = 30;
+      if (timeFilter === 'year') daysToSubtract = 365;
+      cutoffDate = subDays(now, daysToSubtract);
+    }
     
     const filtered = readings.filter(r => isAfter(new Date(r.createdAt), cutoffDate));
     // نعكس المصفوفة لتظهر الأقدم على اليسار والأحدث على اليمين في المخطط
@@ -176,18 +183,30 @@ export default function Dashboard() {
 
       {/* قسم المخطط البياني */}
       <section className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
           <h2 className="font-bold text-lg text-slate-800">نظرة عامة</h2>
-          <div className="flex bg-slate-100 rounded-lg p-1">
-            {['week', 'month', 'year'].map(filter => (
-              <button
-                key={filter}
-                onClick={() => setTimeFilter(filter)}
-                className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${timeFilter === filter ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}
-              >
-                {filter === 'week' ? 'أسبوع' : filter === 'month' ? 'شهر' : 'سنة'}
-              </button>
-            ))}
+          
+          <div className="flex flex-col items-end gap-2">
+            <div className="flex bg-slate-100 rounded-lg p-1 w-fit">
+              {['week', 'month', 'year', 'custom'].map(filter => (
+                <button
+                  key={filter}
+                  onClick={() => setTimeFilter(filter)}
+                  className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${timeFilter === filter ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  {filter === 'week' ? 'أسبوع' : filter === 'month' ? 'شهر' : filter === 'year' ? 'سنة' : 'مخصص'}
+                </button>
+              ))}
+            </div>
+            {timeFilter === 'custom' && (
+              <input 
+                type="date"
+                value={customStartDate}
+                onChange={(e) => setCustomStartDate(e.target.value)}
+                className="text-sm p-1.5 border border-slate-200 rounded-md bg-slate-50 text-slate-600 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                dir="ltr"
+              />
+            )}
           </div>
         </div>
 
@@ -231,18 +250,32 @@ export default function Dashboard() {
           const tir = Math.round((inRange / chartData.length) * 100);
 
           return (
-            <div className="grid grid-cols-3 gap-3 mt-6 border-t border-slate-100 pt-6">
-              <div className="text-center p-3 bg-blue-50 rounded-xl">
-                <p className="text-[10px] sm:text-xs text-slate-500 font-bold mb-1">متوسط السكر</p>
-                <p className="text-lg sm:text-xl font-extrabold text-blue-600">{avg} <span className="text-[10px] font-normal text-blue-400">mg/dL</span></p>
+            <div className="mt-6 border-t border-slate-100 pt-6">
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                <div className="text-center p-3 bg-blue-50 rounded-xl">
+                  <p className="text-[10px] sm:text-xs text-slate-500 font-bold mb-1">متوسط السكر</p>
+                  <p className="text-lg sm:text-xl font-extrabold text-blue-600">{avg} <span className="text-[10px] font-normal text-blue-400">mg/dL</span></p>
+                </div>
+                <div className="text-center p-3 bg-indigo-50 rounded-xl">
+                  <p className="text-[10px] sm:text-xs text-slate-500 font-bold mb-1">التراكمي التقريبي</p>
+                  <p className="text-lg sm:text-xl font-extrabold text-indigo-600">{a1c} <span className="text-[10px] font-normal text-indigo-400">%</span></p>
+                </div>
+                <div className="text-center p-3 bg-green-50 rounded-xl">
+                  <p className="text-[10px] sm:text-xs text-slate-500 font-bold mb-1">الانضباط (TIR)</p>
+                  <p className="text-lg sm:text-xl font-extrabold text-green-600">{tir} <span className="text-[10px] font-normal text-green-400">%</span></p>
+                </div>
               </div>
-              <div className="text-center p-3 bg-indigo-50 rounded-xl relative group">
-                <p className="text-[10px] sm:text-xs text-slate-500 font-bold mb-1">التراكمي التقريبي</p>
-                <p className="text-lg sm:text-xl font-extrabold text-indigo-600">{a1c} <span className="text-[10px] font-normal text-indigo-400">%</span></p>
-              </div>
-              <div className="text-center p-3 bg-green-50 rounded-xl">
-                <p className="text-[10px] sm:text-xs text-slate-500 font-bold mb-1">الانضباط (TIR)</p>
-                <p className="text-lg sm:text-xl font-extrabold text-green-600">{tir} <span className="text-[10px] font-normal text-green-400">%</span></p>
+
+              {/* الشرح التوضيحي */}
+              <div className="bg-slate-50 p-4 rounded-xl text-xs text-slate-600 leading-relaxed border border-slate-100">
+                <p className="mb-2 flex items-start gap-2">
+                  <Info size={14} className="text-indigo-500 mt-0.5 shrink-0" />
+                  <span><strong>التراكمي التقريبي:</strong> معادلة رياضية تقدر نتيجة تحليل HbA1c بناءً على متوسط السكر، وتكون أدق كلما زاد عدد القراءات والأيام.</span>
+                </p>
+                <p className="flex items-start gap-2">
+                  <Info size={14} className="text-green-500 mt-0.5 shrink-0" />
+                  <span><strong>الانضباط (TIR):</strong> يمثل نسبة مئوية لعدد القراءات السليمة التي لا تقل عن 70 ولا تزيد عن 180. الهدف الطبي أن تكون هذه النسبة 70% أو أكثر.</span>
+                </p>
               </div>
             </div>
           );
