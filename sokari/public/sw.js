@@ -33,9 +33,10 @@ self.addEventListener('activate', (e) => {
 
 // عند طلب أي ملف: استراتيجية (الإنترنت أولاً، ثم الكاش)
 self.addEventListener('fetch', (event) => {
-  // تجاهل طلبات قواعد البيانات والذكاء الاصطناعي
+  // تجاهل طلبات قواعد البيانات والذكاء الاصطناعي وطلبات إضافات المتصفح
   if (event.request.url.includes('firestore.googleapis.com') || 
-      event.request.url.includes('generativelanguage.googleapis.com')) {
+      event.request.url.includes('generativelanguage.googleapis.com') ||
+      !event.request.url.startsWith('http')) {
     return;
   }
 
@@ -43,18 +44,20 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
   event.respondWith(
-    fetch(event.request)
-      .then((networkResponse) => {
-        // إذا نجح الاتصال بالإنترنت، احفظ نسخة جديدة في الكاش للمستقبل
-        if (networkResponse.status === 200) {
+    (async () => {
+      try {
+        const networkResponse = await fetch(event.request);
+        
+        // حفظ نسخة جديدة في الكاش فقط إذا كانت الاستجابة صالحة ومحلية (basic) 
+        // هذا يمنع خطأ "Response body is already used" للطلبات الخارجية
+        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
           const responseClone = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseClone);
-          });
+          const cache = await caches.open(CACHE_NAME);
+          cache.put(event.request, responseClone);
         }
+        
         return networkResponse;
-      })
-      .catch(async () => {
+      } catch (error) {
         // إذا فشل الاتصال (أوفلاين)، ابحث في الكاش
         const cachedResponse = await caches.match(event.request);
         if (cachedResponse) {
@@ -63,8 +66,11 @@ self.addEventListener('fetch', (event) => {
         
         // كحل أخير: إذا كان الطلب لتصفح صفحة ولم يجدها، افتح الصفحة الرئيسية المخبأة
         if (event.request.mode === 'navigate') {
-          return caches.match('/');
+          return caches.match('/index.html') || caches.match('/');
         }
-      })
+        
+        throw error;
+      }
+    })()
   );
 });
