@@ -269,8 +269,12 @@ export default function Dashboard() {
               {/* الشرح التوضيحي */}
               <div className="bg-slate-50 p-4 rounded-xl text-xs text-slate-600 leading-relaxed border border-slate-100">
                 <p className="mb-2 flex items-start gap-2">
+                  <Info size={14} className="text-blue-500 mt-0.5 shrink-0" />
+                  <span><strong>متوسط السكر:</strong> معدل قراءاتك خلال الفترة المحددة، وهو المؤشر الأهم لمتابعة استقرار حالتك. الهدف المثالي لمعظم المرضى أن يكون المتوسط حول 120 إلى 140 mg/dL.</span>
+                </p>
+                <p className="mb-2 flex items-start gap-2">
                   <Info size={14} className="text-indigo-500 mt-0.5 shrink-0" />
-                  <span><strong>التراكمي التقريبي:</strong> معادلة رياضية تقدر نتيجة تحليل HbA1c بناءً على متوسط السكر، وتكون أدق كلما زاد عدد القراءات والأيام.</span>
+                  <span><strong>التراكمي التقريبي:</strong> معادلة رياضية تقدر نتيجة تحليل HbA1c بناءً على متوسط السكر، وتكون أدق كلما زادت القراءات والأيام.</span>
                 </p>
                 <p className="flex items-start gap-2">
                   <Info size={14} className="text-green-500 mt-0.5 shrink-0" />
